@@ -8,7 +8,7 @@ Mikhail Sannikov, Ilya Mikhalchuk · October 2026.
 
 ## Answer
 
-Mass and friction are linearly readable from frozen video features: V-JEPA 2 reaches test R² 0.997 for ln m and 0.977 for μ on 2000 push clips, and the controls show that the probe reads the cube's kinematics, not artefacts. Raw pixels do as well (0.999 / 0.982), so this clean scene does not rank encoders; the Cosmos tokenizer latent is weaker at the poolings we tried (0.938 / 0.670), and a realistic touch signal reaches only 0.521 / 0.452 on its own, adds little on top of V-JEPA 2 (+0.005 for μ) and more on top of the weaker DINOv2 sequence (+0.11).
+Mass and friction are linearly readable from frozen video features: V-JEPA 2 reaches test R² 0.997 for ln m and 0.977 for μ on 2000 push clips, and the controls show that the probe reads the cube's kinematics, not artefacts. Raw pixels do as well (0.999 / 0.982), so this clean scene does not rank encoders; the Cosmos tokenizer latent is weaker at the poolings we tried (0.943 / 0.682), and a realistic touch signal reaches only 0.521 / 0.452 on its own, adds little on top of V-JEPA 2 (+0.005 for μ) and more on top of the weaker DINOv2 sequence (+0.11).
 
 ![Test R² for ln m and μ per representation on push, and ln m on the slide control](results/push/figs/headline.png)
 
@@ -22,7 +22,7 @@ Mass and friction are linearly readable from frozen video features: V-JEPA 2 rea
 | V-JEPA 2 ViT-L, random weights, sequence | 0.997 | 0.883 |
 | DINOv2-B, 16-frame sequence | 0.983 | 0.842 |
 | DINOv2-B, mean over frames | 0.838 | 0.176 |
-| Cosmos CV8×8×8 tokenizer, 4×4 grid × 9 slots | 0.938 | 0.670 |
+| Cosmos CV8×8×8 tokenizer, 4×4 grid × 9 slots | 0.943 | 0.682 |
 | realistic touch signal alone | 0.521 | 0.452 |
 | true trajectory x(t) (reference) | 0.976 | 1.000 |
 | exact floor contact (oracle) | 1.000 | 1.000 |
