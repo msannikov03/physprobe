@@ -1,0 +1,16 @@
+data/
+features/
+.cache/
+results/*/preds/
+*.npy
+*.npz
+*.mp4
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.DS_Store
+logs/
+previews/
+results/dummy*/
+results/quicklook/*.log

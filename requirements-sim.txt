@@ -1,0 +1,5 @@
+# $SIM_PY (Python 3.11). Previews (--preview, on by default) need pillow;
+# grid.mp4 also needs the ffmpeg binary on PATH (without it grid.mp4 is skipped, sheet.png is still written).
+mujoco==3.16.0
+numpy==2.4.6
+pillow>=10  # compute SIM_PY has 13.0.0, the Mac has 10.2.0; only Image/ImageDraw are used

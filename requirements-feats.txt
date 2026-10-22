@@ -1,0 +1,5 @@
+# $FEAT_PY (Python 3.13, CUDA): feature extraction + probes. No mujoco.
+-r requirements-probe.txt
+torch==2.10.0
+transformers==5.3.0
+huggingface_hub==1.20.1
