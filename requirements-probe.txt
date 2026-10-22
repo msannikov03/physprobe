@@ -1,0 +1,9 @@
+# Ilya's local venv (Python >= 3.11) and the probe part of compute $FEAT_PY (Python 3.13). No torch, no mujoco.
+# Feature extraction needs requirements-feats.txt instead (it includes this file).
+numpy==2.4.3
+scipy==1.17.1
+scikit-learn==1.8.0
+pandas==3.0.1
+matplotlib==3.10.8
+pillow==12.1.1
+threadpoolctl==3.6.0
