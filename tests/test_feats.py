@@ -3,8 +3,8 @@
 CPU, tiny random configs, no downloads:  python tests/test_feats.py
 GPU, real weights from the HF cache:      PHYSPROBE_GPU_TESTS=1 python tests/test_feats.py
 The two test_gpu_* tests need CUDA and the cached weights; they skip otherwise.
-pytest also works; on compute run it as PYTHONDONTWRITEBYTECODE=1 pytest -p no:cacheprovider tests/test_feats.py,
-otherwise pytest writes assertion-rewrite .pyc files into site-packages on the full home partition.
+pytest also works; where the home partition is nearly full, run it as PYTHONDONTWRITEBYTECODE=1 pytest -p
+no:cacheprovider tests/test_feats.py, otherwise pytest writes assertion-rewrite .pyc files into site-packages.
 """
 import os
 import sys

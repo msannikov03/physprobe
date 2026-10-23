@@ -1,12 +1,24 @@
 #!/usr/bin/env python
 """Quick-look linear probes: frozen video features + data baselines -> (log m, mu) / x0.
 
-Reduced version of plan section 4.3 (B2-B4): ridge only, no MLP, no preds/.
-Inputs per dataset: every features/<ds>/<rep>/<mode>.npz, baselines built from data/
+An independent, reduced second implementation of the probe protocol (CONTRACT.md v1.2 "Probe
+protocol"): ridge only, no MLP, no preds/, its own PCA width and alpha grid.
+Inputs per dataset: every features/<ds>/<rep>/<mode>.npz, its own baselines built from data/
 (cached in <out>/cache/), and two video + contact/realistic combinations.
+Known issue (kept so results/quicklook/ stays reproducible): when features/<ds>/ also holds the
+canonical baseline blocks, the seven inputs that quick-look builds itself (pixels/{clip_seq,static,last},
+track/clip, state/oracle_x, contact/{raw,realistic}) are probed twice under the same name, once per
+definition, and table.md averages the two. The definitions differ by at most 0.0004 in R² for pixels,
+0.003 for the tracker and 0.013 for the 1-px x(t) (quick-look quantises on the top-face pixel scale).
 
-Run on compute:
-  source ~/data2/physprobe/env.sh && cd $PHYSPROBE_ROOT
+Without clips (the Hugging Face download ships no clip_*.npy), the pixel pass is skipped for that
+dataset and its pixels/* and track/clip rows come only from the shipped features/<ds>/pixels|track
+blocks (baselines.build: ITU-R 601 luma grey, float16 clip_seq, saturation/chroma tracker) instead of
+also from quick-look's own pass (equal-weight grey, red-threshold tracker). Those rows then differ from
+the committed results/quicklook/ by at most 0.0002 (pixels) and 0.002 (tracker); all other rows match
+within 1e-6 (measured on poscheck: 1.1e-4 and 3.7e-7).
+
+Run (after `source env.sh`, from the clone):
   OMP_NUM_THREADS=8 nice -n 10 $FEAT_PY scripts/quicklook_probes.py \
       --datasets push slide poscheck --seeds 0 1 2 --out results/quicklook
 """
@@ -200,8 +212,15 @@ def load_feature_aligned(ds, rep, mode, ids):
     return X
 
 
+def has_clips(ds, ids):
+    """True when the dataset's clips are on disk (checked on the first id)."""
+    return bool(ids) and os.path.exists(os.path.join(paths.dataset_dir(ds), f"clip_{ids[0]}.npy"))
+
+
 def input_specs(ds, ids, cache_dir, with_pixels):
-    """-> list of (rep, mode, inputs_name, loader) where loader() -> list of blocks (n, d_i)."""
+    """-> list of (rep, mode, inputs_name, loader) where loader() -> list of blocks (n, d_i).
+
+    Without the pixel pass, pixels/* and track/clip come only from features/ (when they exist there)."""
     def cached(name):
         return lambda: [np.load(cache_path(cache_dir, ds, name)).astype(np.float32)]
 
@@ -212,6 +231,9 @@ def input_specs(ds, ids, cache_dir, with_pixels):
     base = [("state", "oracle_x"), ("contact", "raw"), ("contact", "realistic")]
     if with_pixels:
         base = [("pixels", "clip_seq"), ("pixels", "static"), ("pixels", "last"), ("track", "clip")] + base
+    else:
+        found = sorted(f"{r}/{m}" for r, m, _, _ in specs if r in ("pixels", "track"))
+        log(f"{ds}: no pixel pass; pixel/track rows from features/: {', '.join(found) or 'none'}")
     specs += [(rep, mode, f"{rep}/{mode}", cached(f"{rep}_{mode}")) for rep, mode in base]
     have = {(r, m) for r, m, _, _ in specs}
     for rep, mode in COMBOS:
@@ -518,7 +540,8 @@ def main(argv=None):
     ap.add_argument("--out", default="results/quicklook")
     ap.add_argument("--workers", type=int, default=4, help="processes for the pixel pass")
     ap.add_argument("--pixel-datasets", nargs="*", default=None,
-                    help="datasets that get pixels/track baselines (default: all)")
+                    help="datasets that get quick-look's own pixels/track pass (default: every dataset whose "
+                         "clips are on disk; the others use features/<ds>/pixels|track)")
     ap.add_argument("--report-only", action="store_true", help="rebuild table/figure/gates from probes.csv")
     args = ap.parse_args(argv)
     import pandas as pd
@@ -534,7 +557,17 @@ def main(argv=None):
     if args.report_only:
         df = pd.read_csv(csv)
     else:
-        pix = set(args.datasets if args.pixel_datasets is None else args.pixel_datasets)
+        clips = {ds: has_clips(ds, [r["id"] for r in io.load_meta(ds)]) for ds in args.datasets}
+        if args.pixel_datasets is None:
+            pix = {ds for ds in args.datasets if clips[ds]}
+        else:
+            pix = set(args.pixel_datasets)
+            missing = sorted(ds for ds in pix & set(args.datasets) if not clips[ds])
+            if missing:
+                ap.error(f"--pixel-datasets {missing}: no clips in data/ (generate them with scripts/gen_all.sh)")
+        for ds in sorted(set(args.datasets) - pix):
+            log(f"{ds}: {'clips present, pixel pass not requested' if clips[ds] else 'no clips in data/'}; "
+                "pixels/track from features/")
         for ds in args.datasets:  # all pixel passes first, before any BLAS/OpenMP threads start
             build_baselines(ds, cache_dir, ds in pix, args.workers)
         rows = []

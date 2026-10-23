@@ -1,7 +1,7 @@
 """End-to-end test of the B pipeline on synthetic dummy data (CPU only).
 
 make_dummy (push + slide) -> baselines.build -> probes.run --fresh -> probes.report, then checks
-(PLAN.md §4.3 B5 expectations, CONTRACT v1.2 gates):
+(CONTRACT.md v1.2 and v1.3 gates and blocks):
   static R² ≈ 0; oracle_x R²(log m) > 0.9; contact/raw R²(log m) ≈ 1;
   slide: oracle R²(log m) < 0.05; unquantised oracle_xc >= quantised oracle_x on μ;
   label-permutation null p95 <= report.null_p95_bound(n_train) (n-aware) on pixels/clip_seq;
@@ -116,7 +116,7 @@ def run_checks(n=100, regen=False):
                        g.r2.mean() <= bound, g.r2.mean()))
         checks.append((f"push perm null mean ≤ 0.02 pixels/clip_seq {t}", g.null_mean.mean() <= 0.02,
                        g.null_mean.mean()))
-    # mean predictor, CONTRACT v1.2 (n-aware): [3·E − 0.01, 0.01], E = −(1 + n_te/n_tr)/(n_te − 1)
+    # mean predictor, CONTRACT v1.3 (n-aware): [3·E − 0.01, 0.01], E = −(1 + n_te/n_tr)/(n_te − 3)
     for t, g in push[push.probe == "mean"].groupby("target"):
         lo, hi = report.mean_r2_bounds(g.n_test.mean(), g.n_train.mean())
         checks.append((f"push mean R²({t}) ∈ [{lo:.3f}, {hi}]", lo <= g.r2.mean() <= hi, g.r2.mean()))
@@ -185,7 +185,7 @@ def _sim_like_contact(m, mu, J=1.0, resid=1.1e-9):
     return c
 
 
-def test_realistic_contact_floor():
+def test_realistic_contact_floor(monkeypatch):
     rng = np.random.default_rng(0)
     ms = np.exp(rng.uniform(np.log(0.5), np.log(2.0), 300))
     mus = rng.uniform(0.2, 0.8, 300)
@@ -203,10 +203,12 @@ def test_realistic_contact_floor():
     assert abs(np.corrcoef(X[:, -1, 1], mus)[0, 1]) < 0.2
     sd = X.reshape(len(X), -1).std(0)
     assert not ((sd > 0) & (sd < 1e-3)).any(), "near-constant column (z-scoring would amplify it)"
-    # the multiplicative-noise version leaks: sanity-check that the test would catch it
-    mx = np.array([c[:, 1].max() for c in clips])
-    leak = np.array([c[-1, 1] for c in clips]) / mx
-    assert abs(np.corrcoef(np.log(leak), np.log(mus))[0, 1]) > 0.9
+    # negative control: the same code without the floor must show the leak (post-stop ft/max = resid/μ)
+    monkeypatch.setattr(build, "CONTACT_FLOOR_REL", 0.0)
+    nofloor = np.stack([build.realistic_base(c) for c in clips])
+    ft_last = nofloor[:, -1, 1]
+    assert (ft_last > 0).all(), "without the floor the post-stop residual should survive"
+    assert abs(np.corrcoef(np.log(ft_last), np.log(mus))[0, 1]) > 0.9
 
 
 def test_noisy_contact():

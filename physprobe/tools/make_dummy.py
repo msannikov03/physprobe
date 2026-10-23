@@ -32,7 +32,6 @@ import datetime as _dt
 import json
 from pathlib import Path
 import os
-import subprocess
 import time
 from multiprocessing import Pool
 
@@ -52,14 +51,6 @@ BG = 128
 COLOR = np.array([220, 30, 30], np.uint8)
 CUBE_HALF = 0.05
 FAKE_D = 1024
-
-
-def _git_commit():
-    try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(io.root()),
-                                       stderr=subprocess.DEVNULL, text=True).strip()
-    except Exception:
-        return "nogit"
 
 
 def sample_params(seed, m_range, mu_range):
@@ -179,7 +170,7 @@ def main(argv=None):
     rows = [r for r, _ in res]
     io.write_meta(ds_dir, rows)
 
-    commit = _git_commit()
+    commit = io.git_commit()
     io.write_dataset_json(ds_dir, {
         "name": dataset, "scenario": "dummy", "dummy_kind": kind, "n": args.n,
         "T": T, "H": H, "W": W, "fps": FPS, "dt": 1.0 / (FPS * SUBSTEPS), "substeps": SUBSTEPS,

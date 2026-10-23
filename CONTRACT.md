@@ -2,16 +2,18 @@
 
 Interface contract between the two halves of the project: the formats of data, features, baseline blocks and results, and the protocol that produces the reported numbers. Newer amendments override older text where they differ; everything else stands. Items in older sections marked "→ v1.3" are superseded below. Any change: agree with the other author first, then bump the version here.
 
-## v1.3 amendments (review fixes, 2026-10-22, commit fce21d1)
+## v1.3 amendments (review fixes, 2026-10-22, private commit fce21d1)
+
+**Release v1.1 edits (2026-10-23), applied in place below.** The mean gate's E uses n_test − 3 and its p-values are called approximate; a "frac" tie prints 1.00; `io.git_commit()` ignores `results/` when deciding `-dirty` and is now used by `probes.run` and `baselines.build`; without clips, `scripts/probe_all.sh` rebuilds only the state and contact blocks and keeps the shipped `pixels` and `track` blocks. No released R² value changes; the printed mean-gate bounds widen slightly.
 
 **Realistic contact (`contact/realistic`, replaces v1 and v1.2).** Per clip, each force channel (fn, ft) goes through three steps: values with |x| < 10⁻³ · (clip max |x|) are set to 0, the channel is divided by its clip max, and additive N(0, 0.05) noise is added on that normalised scale. The third channel is the slip flag 1[slip > 10⁻³ m/s], kept binary and noise-free. 64 × 3 = 192 features, not an oracle. The floor is new. After the cube stops, MuJoCo leaves a friction residual of about 10⁻⁸ N that is proportional to m. Divided by the clip max μmg and z-scored on train, that residual became an exact 1/μ code, which is how the v1.2 block reached R² 0.95 (ln m) / 0.86 (μ) on push. With the floor, what survives is mainly the stop time t_stop = J/(mμg), carried by the ft step and the slip flag. The noise is additive because a multiplicative N(1, σ) keeps tiny values tiny.
 
-**Noise curve (`contact/noise_<p>`, replaces v1.2).** `contact/noise_000`, `noise_010`, `noise_030` and `noise_100` are the noise-free realistic block (floored fn/max, floored ft/max, slip flag) plus additive N(0, p) on every row of all three channels, p ∈ {0, 0.1, 0.3, 1.0}. The same rng seed is used at every level, so the draws are identical up to scale and the curve is monotone in p by construction. These blocks are not oracles: they carry no absolute force scale and no raw slip speed, which (|v_xy| = v0 − μgt) would be an exact kinematic oracle. Built by `baselines.build --noise-curve` on push and slide.
+**Noise curve (`contact/noise_<p>`, replaces v1.2).** `contact/noise_000`, `noise_010`, `noise_030` and `noise_100` are the noise-free realistic block (floored fn/max, floored ft/max, slip flag) plus additive N(0, p) on every row of all three channels, p ∈ {0, 0.1, 0.3, 1.0}. The same rng seed is used at every level, so the draws are identical up to scale and the curve is monotone in expectation; CV-tuned ridge R² is not monotone by construction, but the released curve is (observed). These blocks are not oracles: they carry no absolute force scale and no raw slip speed, which (|v_xy| = v0 − μgt) would be an exact kinematic oracle. Built by `baselines.build --noise-curve` on push and slide.
 
-**State blocks.** `state/oracle_fit` = [ln v0, a] fitted on the unquantised x(t) (v1.2 fitted the 1-px quantised x(t)). `state/oracle_xc` (unquantised x(t), 64 values) is the linear x(t) read-out reference. It is a ceiling for μ only: ln m = ln J − ln v0 is nonlinear in x(t), and pixels, V-JEPA 2 and contact/raw beat it on ln m. In the "frac of state/oracle_xc" column a value above 1 is printed as `n/a (>1)`. `state/oracle_x` (1-px quantised) stays informational.
+**State blocks.** `state/oracle_fit` = [ln v0, a] fitted on the unquantised x(t) (v1.2 fitted the 1-px quantised x(t)). `state/oracle_xc` (unquantised x(t), 64 values) is the linear x(t) read-out reference. It is a ceiling for μ only: ln m = ln J − ln v0 is nonlinear in x(t), and pixels, V-JEPA 2 and contact/raw beat it on ln m. In the "frac of state/oracle_xc" column a value above 1.001 is printed as `n/a (>1)` and a tie as 1.00. `state/oracle_x` (1-px quantised) stays informational.
 
 **Gates (`physprobe/probes/report.py`; replaces v1.2 where they differ).**
-- mean: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 1), the expected test R² of the train-mean predictor (R²/E is approximately χ²₁).
+- mean: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 3), the expected test R² of the train-mean predictor for Gaussian targets (ȳ_test is independent of SS_test and E[1/χ²_k] = 1/(k − 2)). R²/E is approximately χ²₁, so the printed p-values (≈ 0.08 per seed, ≈ 0.03 for the 3-seed mean) are approximate; the 3-seed value is optimistic because the splits reshuffle the same clips.
 - oracle: `state/oracle_xc` R²(ln m) > 0.95 and R²(μ) > 0.9 on push. On slide the gate checks μ only, because m is not identifiable there.
 - poscheck: each encoder passes when the pooling chosen on val among its `clip_mean*`, `clip_seq*` and `clip_grid*` modes gives R²(x0) ≥ 0.5. The `clip_mean` value is printed alongside, so an encoder whose global mean loses position (Cosmos) is flagged.
 - static, null, slide and contact_label are as in v1.2.
@@ -32,7 +34,7 @@ Interface contract between the two halves of the project: the formats of data, f
 - `clip_seq`: spatial mean per slot, (9, 16) slot-major, 144 values, float16.
 - `clip_grid4`: adaptive average pool of each slot to 4 × 4, (16, 9, 4, 4) channel-major, 2304 values, float16. Per-slot slicing must reshape to (16, 9, 4, 4) and index axis 1.
 
-**Provenance.** `io.git_commit()` returns the short HEAD with `-dirty` appended when tracked files differ from HEAD, the same rule as `git describe --dirty`. It is written to `dataset.json`, to feature `info` and to every `probes.csv` row. The first generation of a dataset stores `provenance` = {`git_commit`, `sim_code_sha256` (sha256 of `physprobe/sim/*.py`), `created`, `parts_tag`} in `data/<ds>/.parts/config.json`, and `dataset.json` copies `git_commit`, `created` and `sim_code_sha256` from it. Resuming a dataset with clips left to generate is refused when the sim code hash has changed; `--overwrite` regenerates. A dataset whose `config.json` predates provenance can be re-assembled but not extended; its `dataset.json` keeps the old `git_commit` and has `sim_code_sha256: null` with a `provenance` note.
+**Provenance.** `io.git_commit()` returns the short HEAD with `-dirty` appended when tracked files outside `results/` differ from HEAD (the rule of `git describe --dirty`, with the tracked canonical outputs excluded so that a canonical run does not mark the next one dirty). It is written to `dataset.json`, to feature `info` and to every `probes.csv` row (in `probes.run` and `baselines.build` from release v1.1 on; before that they stamped the HEAD without the dirty check). The first generation of a dataset stores `provenance` = {`git_commit`, `sim_code_sha256` (sha256 of `physprobe/sim/*.py`), `created`, `parts_tag`} in `data/<ds>/.parts/config.json`, and `dataset.json` copies `git_commit`, `created` and `sim_code_sha256` from it. Resuming a dataset with clips left to generate is refused when the sim code hash has changed; `--overwrite` regenerates. A dataset whose `config.json` predates provenance can be re-assembled but not extended; its `dataset.json` keeps the old `git_commit` and has `sim_code_sha256: null` with a `provenance` note. The released datasets predate these keys: their `dataset.json` carries `git_commit` c3dac34 and no `sim_code_sha256`. Hashes inside results/, the feature info and the notebook refer to the private development history that was squashed into the public v1.0 commit d41bcfa; its physprobe/ and tests/ trees are identical. The data were generated by the simulator code first committed as a124216 (physics identical to the release).
 
 **Seeds and splits (added to v1).** Base seeds are assigned by dataset name first: `push_ood` 200000 and `push_nuis` 400000, so they never reuse push seeds. Otherwise by scenario: push 0, slide 100000, poscheck 300000. Datasets named `*_ood` get split `ood`, `smoke*` get split `smoke`, and all others the canonical `seed % 20` split.
 
@@ -75,7 +77,7 @@ These override the v1 text where they differ. Everything else in v1 stands.
 
 **Generation.** `scripts/gen_all.sh` (workers capped at 10, nice 10). Each dataset keeps its config in `data/<ds>/.parts/config.json`; a mismatched config is refused, `--overwrite` regenerates. Extra `dataset.json` keys: `friction_model, sim_version, base_seed, split_mode, g, path_m, rest_z_m, v_stop_mps, cube_rgba, floor_rgba, frame0`.
 
-**Datasets generated 2026-10-22 on compute** (`~/data2/physprobe/data/`): push n=2000, slide n=1000, poscheck n=300, smoke_push n=20; all `ok_frac = 1.0`, `in_frame_frac = 1.0`, canonical splits 70/15/15, validate reports no problems.
+**Datasets generated 2026-10-22 on our GPU machine** (`$PHYSPROBE_ROOT/data/`): push n=2000, slide n=1000, poscheck n=300, smoke_push n=20; all `ok_frac = 1.0`, `in_frame_frac = 1.0`, canonical splits 70/15/15, validate reports no problems.
 
 ## v1 text (the original contract, 2026-10-22, verbatim, in Russian)
 ### 4.1 Интерфейсный контракт (CONTRACT v1, фиксируется в T0)
@@ -83,11 +85,11 @@ These override the v1 text where they differ. Everything else in v1 stands.
 Любое изменение контракта — только через сообщение второму и повышение версии в `CONTRACT.md`. Потребитель игнорирует незнакомые ключи.
 
 **Корень и окружение**
-- `ROOT = $PHYSPROBE_ROOT`. Если переменная не задана, корень — это корень клона. На compute: `~/data2/physprobe`, он же git-клон.
+- `ROOT = $PHYSPROBE_ROOT`. Если переменная не задана, корень — это корень клона. На GPU-машине: `$PHYSPROBE_ROOT`, он же git-клон.
 - `data/`, `features/`, `.cache/`, `results/*/preds/` в git не попадают (gitignore).
-- `env.sh` (на compute делать `source` всегда):
+- `env.sh` (на GPU-машине делать `source` всегда):
   ```bash
-  export PHYSPROBE_ROOT=$HOME/data2/physprobe
+  export PHYSPROBE_ROOT=/path/to/physprobe
   export HF_HOME=$PHYSPROBE_ROOT/.cache/hf
   export TORCH_HOME=$PHYSPROBE_ROOT/.cache/torch
   export PIP_CACHE_DIR=$PHYSPROBE_ROOT/.cache/pip
@@ -106,7 +108,7 @@ These override the v1 text where they differ. Everything else in v1 stands.
 - `physprobe/io.py`, `paths.py`: только numpy и stdlib.
 - `physprobe/sim/*`: numpy + mujoco (SIM_PY).
 - `physprobe/feats/*`: torch + transformers (FEAT_PY), без mujoco.
-- `physprobe/baselines/*`, `physprobe/probes/*`, `physprobe/tools/*`: numpy, scipy, sklearn, pandas, matplotlib, без torch и mujoco. Запускаются в FEAT_PY на compute и в локальном venv у Ильи.
+- `physprobe/baselines/*`, `physprobe/probes/*`, `physprobe/tools/*`: numpy, scipy, sklearn, pandas, matplotlib, без torch и mujoco. Запускаются в FEAT_PY на GPU-машине и в локальном CPU-venv.
 
 **Данные: `data/<dataset>/`**
 Наборы: `push`, `slide`, `poscheck`, `smoke_push`, `dummy`; позже `push_nuis`, `push_ood`.
