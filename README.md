@@ -121,7 +121,7 @@ The Hugging Face dataset ships the features and the contact and state signals, b
 git clone https://github.com/msannikov03/physprobe && cd physprobe && git checkout v1.1
 python3 -m venv .venv-probe && . .venv-probe/bin/activate     # Python >= 3.11
 pip install -r requirements-probe.txt huggingface_hub==1.20.1
-python -c "from huggingface_hub import snapshot_download as s; s('businesslion/physprobe-features', repo_type='dataset', local_dir='.', allow_patterns=['data/*', 'features/*'], revision='v1.1')"
+python scripts/download_features.py          # features + signals from Hugging Face (tag v1.1), resumable; sets HF_HUB_DISABLE_XET=1 to avoid the anonymous 429 limit
 scripts/reproduce.sh --from probes
 python scripts/compare_results.py --rev v1.1
 ```
