@@ -1,13 +1,13 @@
 # Sanity gates: `poscheck`
 
 - Splits — s0: n_train=210, n_val=45, n_test=45, n_excluded=0; s1: n_train=210, n_val=45, n_test=45, n_excluded=0; s2: n_train=210, n_val=45, n_test=45, n_excluded=0
-- git commit: `fce21d1`
-- runs: 2026-10-22T22:48:42+00:00 … 2026-10-22T22:48:42+00:00
+- git commit: `c5fe74b`
+- runs: 2026-10-23T00:58:59+00:00 … 2026-10-23T00:58:59+00:00
 - All numbers: seed-mean test R² (perm: seed-mean of the per-seed null p95 / null mean).
 
 | Gate | Status |
 |---|---|
-| mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 1) | **PASS** |
+| mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 3) | **PASS** |
 | static (frame 0) R² < 0.05 for all reps (log m, μ) | **N/A** |
 | label-permutation null: p95 ≤ max(0.10, 3.3/√n_train), mean ≤ 0.02 | **PASS** |
 | plan v1 rule, informational: shuffled-label control R² ≤ 0.05 | **FAIL** (info) |
@@ -16,10 +16,10 @@
 | poscheck: R²(x0) ≥ 0.5 per encoder for its val-chosen pooling (clip_mean shown) | **PASS** |
 | contact/raw labelled ORACLE | **PASS** |
 
-## PASS — mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 1)
+## PASS — mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 3)
 
-- x0_m: R² = -0.0169, n_test = 45, n_train = 210, bound [-0.0928, 0.01] (E ≈ -0.0276) → ok
-- bound: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 1), the expected test R² of the train-mean predictor (R² = −n_test·(ȳ_test − ȳ_train)²/SS_test, so R²/E ≈ χ²₁: one seed leaves the bound with p ≈ 0.08, the 3-seed mean with p ≈ 0.03)
+- x0_m: R² = -0.0169, n_test = 45, n_train = 210, bound [-0.0967, 0.01] (E ≈ -0.0289) → ok
+- bound: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 3), the expected test R² of the train-mean predictor for Gaussian y (R² = −n_test·(ȳ_test − ȳ_train)²/SS_test, so R²/E ≈ χ²₁: one seed leaves the bound with approximate p ≈ 0.08; the 3-seed mean with approximate p ≈ 0.03, optimistic because the splits reshuffle the same clips)
 
 ## N/A — static (frame 0) R² < 0.05 for all reps (log m, μ)
 

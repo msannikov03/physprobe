@@ -1,10 +1,10 @@
 {
- "push: baselines": 0.7,
- "slide: baselines": 0.3,
- "poscheck: baselines": 0.1,
- "push: probes": 113.0,
- "slide: probes": 65.4,
- "poscheck: probes": 17.0,
+ "push: baselines": 0.0,
+ "slide: baselines": 0.0,
+ "poscheck: baselines": 0.0,
+ "push: probes": 79.6,
+ "slide: probes": 53.5,
+ "poscheck: probes": 13.7,
  "report": 0.5,
- "total": 197.1
+ "total": 147.4
 }

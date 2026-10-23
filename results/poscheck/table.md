@@ -1,10 +1,10 @@
 # PhysProbe results: `poscheck`
 
 - Splits — s0: n_train=210, n_val=45, n_test=45, n_excluded=0; s1: n_train=210, n_val=45, n_test=45, n_excluded=0; s2: n_train=210, n_val=45, n_test=45, n_excluded=0
-- git commit: `fce21d1`
-- runs: 2026-10-22T22:48:42+00:00 … 2026-10-22T22:48:42+00:00
+- git commit: `c5fe74b`
+- runs: 2026-10-23T00:58:59+00:00 … 2026-10-23T00:58:59+00:00
 - R² = test R², mean ± std over seeds (ridge probe unless stated). RMSE for log m is log-RMSE.
-- Δ = R² − R²(pixels/clip_seq); frac = R² / R²(state/oracle_xc) (per target); a reference that is beaten (frac > 1) is printed as `n/a (>1)`; `state/oracle_xc` = unquantised x(t), the linear x(t) read-out reference: a ceiling for μ, not for log m (a linear probe on x(t) does not invert d = J²/(2m²μg), so frac for log m is not a fraction of a ceiling); `state/oracle_x` (1-px quantised) is shown for information only.
+- Δ = R² − R²(pixels/clip_seq); frac = R² / R²(state/oracle_xc) (per target); a reference that is beaten (frac > 1.001) is printed as `n/a (>1)`, a tie as 1.00; `state/oracle_xc` = unquantised x(t), the linear x(t) read-out reference: a ceiling for μ, not for log m (a linear probe on x(t) does not invert d = J²/(2m²μg), so frac for log m is not a fraction of a ceiling); `state/oracle_x` (1-px quantised) is shown for information only.
 - ★ = mode chosen by validation R² (mean r2_val over targets; candidates clip_mean*, clip_seq*, clip_grid*), used in headline.png.
 
 **Gates:** mean PASS, static N/A, null PASS, oracle N/A, slide PASS, poscheck PASS, contact_label PASS; plan v1 rules (informational): shuffle_v1 FAIL (details in `gates.md`)

@@ -42,6 +42,7 @@ Controls: every first-frame input scores ≈ 0 (the frame is identical across cl
 - Full tables, every pooling mode, shuffled-label controls: [`results/push/table.md`](results/push/table.md), [`results/slide/table.md`](results/slide/table.md), [`results/poscheck/table.md`](results/poscheck/table.md).
 - Sanity gates (mean predictor, static frame, permutation null, state reference, slide leak, position check): [`results/push/gates.md`](results/push/gates.md) and the same file per dataset.
 - Features (1.5 GB) and the per-clip contact and state signals: Hugging Face dataset [`businesslion/physprobe-features`](https://huggingface.co/datasets/businesslion/physprobe-features), revision `v1.1`. With it the probe numbers reproduce on a CPU in about 15 minutes (see "Reproduce on a CPU").
+- Slides (23-slide talk + appendix, HTML with speaker notes, and a PDF): attached to the [v1.1 release](https://github.com/msannikov03/physprobe/releases/tag/v1.1).
 - Interface contract (data, feature and result formats; probe protocol): [`CONTRACT.md`](CONTRACT.md).
 - Proposal, in Russian: [`docs/proposal_v2.md`](docs/proposal_v2.md).
 

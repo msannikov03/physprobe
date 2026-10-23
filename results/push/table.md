@@ -1,10 +1,10 @@
 # PhysProbe results: `push`
 
 - Splits — s0: n_train=1400, n_val=300, n_test=300, n_excluded=0; s1: n_train=1400, n_val=300, n_test=300, n_excluded=0; s2: n_train=1400, n_val=300, n_test=300, n_excluded=0
-- git commit: `fce21d1`
-- runs: 2026-10-22T22:49:32+00:00 … 2026-10-22T22:49:32+00:00
+- git commit: `c5fe74b`
+- runs: 2026-10-23T00:59:41+00:00 … 2026-10-23T00:59:41+00:00
 - R² = test R², mean ± std over seeds (ridge probe unless stated). RMSE for log m is log-RMSE.
-- Δ = R² − R²(pixels/clip_seq); frac = R² / R²(state/oracle_xc) (per target); a reference that is beaten (frac > 1) is printed as `n/a (>1)`; `state/oracle_xc` = unquantised x(t), the linear x(t) read-out reference: a ceiling for μ, not for log m (a linear probe on x(t) does not invert d = J²/(2m²μg), so frac for log m is not a fraction of a ceiling); `state/oracle_x` (1-px quantised) is shown for information only.
+- Δ = R² − R²(pixels/clip_seq); frac = R² / R²(state/oracle_xc) (per target); a reference that is beaten (frac > 1.001) is printed as `n/a (>1)`, a tie as 1.00; `state/oracle_xc` = unquantised x(t), the linear x(t) read-out reference: a ceiling for μ, not for log m (a linear probe on x(t) does not invert d = J²/(2m²μg), so frac for log m is not a fraction of a ceiling); `state/oracle_x` (1-px quantised) is shown for information only.
 - ★ = mode chosen by validation R² (mean r2_val over targets; candidates clip_mean*, clip_seq*, clip_grid*), used in headline.png.
 
 **Gates:** mean PASS, static PASS, null PASS, oracle PASS, slide PASS, poscheck PASS, contact_label PASS; plan v1 rules (informational): shuffle_v1 PASS, oracle_v1 FAIL (details in `gates.md`)
@@ -46,8 +46,8 @@
 | combo | `vjepa2_l/clip_seq+contact/realistic` | 0.995 ± 0.000 | 0.027 | 0.975 ± 0.003 | 0.027 | -0.004 | -0.007 | n/a (>1) | 0.98 | 3 |  |
 | state | `oracle_xc` | 0.976 ± 0.001 | 0.062 | 1.000 ± 0.000 | 0.001 | -0.023 | +0.018 | 1.00 | 1.00 | 3 | **ORACLE** ★ |
 | state | `oracle_x` | 0.974 ± 0.001 | 0.065 | 0.865 ± 0.013 | 0.063 | -0.025 | -0.117 | 1.00 | 0.87 | 3 | **ORACLE** pixel-quantised oracle (not an upper bound) |
-| state | `oracle_fit` | 1.000 ± 0.000 | 0.000 | 1.000 ± 0.000 | 0.000 | +0.001 | +0.018 | n/a (>1) | n/a (>1) | 3 | **ORACLE** |
-| contact | `raw` | 1.000 ± 0.000 | 0.007 | 1.000 ± 0.000 | 0.000 | +0.001 | +0.018 | n/a (>1) | n/a (>1) | 3 | **ORACLE** ★ |
+| state | `oracle_fit` | 1.000 ± 0.000 | 0.000 | 1.000 ± 0.000 | 0.000 | +0.001 | +0.018 | n/a (>1) | 1.00 | 3 | **ORACLE** |
+| contact | `raw` | 1.000 ± 0.000 | 0.007 | 1.000 ± 0.000 | 0.000 | +0.001 | +0.018 | n/a (>1) | 1.00 | 3 | **ORACLE** ★ |
 | contact | `realistic` | 0.521 ± 0.038 | 0.279 | 0.452 ± 0.043 | 0.128 | -0.478 | -0.530 | 0.53 | 0.45 | 3 |  |
 | contact | `noise_000` | 0.527 ± 0.036 | 0.277 | 0.457 ± 0.041 | 0.128 | -0.472 | -0.525 | 0.54 | 0.46 | 3 |  |
 | contact | `noise_010` | 0.519 ± 0.034 | 0.280 | 0.450 ± 0.044 | 0.128 | -0.480 | -0.533 | 0.53 | 0.45 | 3 |  |
@@ -93,7 +93,7 @@
 
 ## Identifiability check: slide (log m should be ≈ 0)
 
-Dataset `slide`. Splits — s0: n_train=700, n_val=150, n_test=150, n_excluded=0; s1: n_train=700, n_val=150, n_test=150, n_excluded=0; s2: n_train=700, n_val=150, n_test=150, n_excluded=0 git commit: `fce21d1`
+Dataset `slide`. Splits — s0: n_train=700, n_val=150, n_test=150, n_excluded=0; s1: n_train=700, n_val=150, n_test=150, n_excluded=0; s2: n_train=700, n_val=150, n_test=150, n_excluded=0 git commit: `c5fe74b`
 
 | Representation | Mode | probe | log m R² | log m RMSE | note |
 |---|---|---|---|---|---|

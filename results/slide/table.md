@@ -1,10 +1,10 @@
 # PhysProbe results: `slide`
 
 - Splits — s0: n_train=700, n_val=150, n_test=150, n_excluded=0; s1: n_train=700, n_val=150, n_test=150, n_excluded=0; s2: n_train=700, n_val=150, n_test=150, n_excluded=0
-- git commit: `fce21d1`
-- runs: 2026-10-22T22:45:46+00:00 … 2026-10-22T22:45:46+00:00
+- git commit: `c5fe74b`
+- runs: 2026-10-23T00:56:06+00:00 … 2026-10-23T00:56:06+00:00
 - R² = test R², mean ± std over seeds (ridge probe unless stated). RMSE for log m is log-RMSE.
-- Δ = R² − R²(pixels/clip_seq); frac = R² / R²(state/oracle_xc) (per target); a reference that is beaten (frac > 1) is printed as `n/a (>1)`; `state/oracle_xc` = unquantised x(t), the linear x(t) read-out reference: a ceiling for μ, not for log m (a linear probe on x(t) does not invert d = J²/(2m²μg), so frac for log m is not a fraction of a ceiling); `state/oracle_x` (1-px quantised) is shown for information only.
+- Δ = R² − R²(pixels/clip_seq); frac = R² / R²(state/oracle_xc) (per target); a reference that is beaten (frac > 1.001) is printed as `n/a (>1)`, a tie as 1.00; `state/oracle_xc` = unquantised x(t), the linear x(t) read-out reference: a ceiling for μ, not for log m (a linear probe on x(t) does not invert d = J²/(2m²μg), so frac for log m is not a fraction of a ceiling); `state/oracle_x` (1-px quantised) is shown for information only.
 - ★ = mode chosen by validation R² (mean r2_val over targets; candidates clip_mean*, clip_seq*, clip_grid*), used in headline.png.
 
 **Gates:** mean PASS, static PASS, null PASS, oracle PASS, slide PASS, poscheck PASS, contact_label PASS; plan v1 rules (informational): shuffle_v1 PASS (details in `gates.md`)
@@ -47,7 +47,7 @@
 | state | `oracle_xc` | -0.024 ± 0.025 | 0.409 | 1.000 ± 0.000 | 0.000 | +0.000 | +0.000 | n/a | 1.00 | 3 | **ORACLE** ★ |
 | state | `oracle_x` | -0.024 ± 0.025 | 0.409 | 0.999 ± 0.000 | 0.006 | +0.000 | -0.001 | n/a | 1.00 | 3 | **ORACLE** pixel-quantised oracle (not an upper bound) |
 | state | `oracle_fit` | -0.024 ± 0.025 | 0.409 | 1.000 ± 0.000 | 0.000 | +0.000 | +0.000 | n/a | 1.00 | 3 | **ORACLE** |
-| contact | `raw` | 0.971 ± 0.003 | 0.068 | 1.000 ± 0.000 | 0.000 | +0.996 | +0.000 | n/a | n/a (>1) | 3 | **ORACLE** ★ |
+| contact | `raw` | 0.971 ± 0.003 | 0.068 | 1.000 ± 0.000 | 0.000 | +0.996 | +0.000 | n/a | 1.00 | 3 | **ORACLE** ★ |
 | contact | `realistic` | -0.024 ± 0.025 | 0.409 | 0.999 ± 0.000 | 0.007 | -0.000 | -0.001 | n/a | 1.00 | 3 |  |
 | contact | `noise_000` | -0.024 ± 0.025 | 0.409 | 1.000 ± 0.000 | 0.000 | -0.000 | +0.000 | n/a | 1.00 | 3 |  |
 | contact | `noise_010` | -0.024 ± 0.025 | 0.409 | 0.994 ± 0.000 | 0.013 | -0.000 | -0.006 | n/a | 0.99 | 3 |  |

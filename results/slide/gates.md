@@ -1,13 +1,13 @@
 # Sanity gates: `slide`
 
 - Splits — s0: n_train=700, n_val=150, n_test=150, n_excluded=0; s1: n_train=700, n_val=150, n_test=150, n_excluded=0; s2: n_train=700, n_val=150, n_test=150, n_excluded=0
-- git commit: `fce21d1`
-- runs: 2026-10-22T22:45:46+00:00 … 2026-10-22T22:45:46+00:00
+- git commit: `c5fe74b`
+- runs: 2026-10-23T00:56:06+00:00 … 2026-10-23T00:56:06+00:00
 - All numbers: seed-mean test R² (perm: seed-mean of the per-seed null p95 / null mean).
 
 | Gate | Status |
 |---|---|
-| mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 1) | **PASS** |
+| mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 3) | **PASS** |
 | static (frame 0) R² < 0.05 for all reps (log m, μ) | **PASS** |
 | label-permutation null: p95 ≤ max(0.10, 3.3/√n_train), mean ≤ 0.02 | **PASS** |
 | plan v1 rule, informational: shuffled-label control R² ≤ 0.05 | **PASS** (info) |
@@ -16,11 +16,11 @@
 | poscheck: R²(x0) ≥ 0.5 per encoder for its val-chosen pooling (clip_mean shown) | **PASS** |
 | contact/raw labelled ORACLE | **PASS** |
 
-## PASS — mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 1)
+## PASS — mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 3)
 
-- log_m: R² = -0.0244, n_test = 150, n_train = 700, bound [-0.0344, 0.01] (E ≈ -0.0081) → ok
-- mu: R² = -0.0012, n_test = 150, n_train = 700, bound [-0.0344, 0.01] (E ≈ -0.0081) → ok
-- bound: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 1), the expected test R² of the train-mean predictor (R² = −n_test·(ȳ_test − ȳ_train)²/SS_test, so R²/E ≈ χ²₁: one seed leaves the bound with p ≈ 0.08, the 3-seed mean with p ≈ 0.03)
+- log_m: R² = -0.0244, n_test = 150, n_train = 700, bound [-0.0348, 0.01] (E ≈ -0.0083) → ok
+- mu: R² = -0.0012, n_test = 150, n_train = 700, bound [-0.0348, 0.01] (E ≈ -0.0083) → ok
+- bound: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 3), the expected test R² of the train-mean predictor for Gaussian y (R² = −n_test·(ȳ_test − ȳ_train)²/SS_test, so R²/E ≈ χ²₁: one seed leaves the bound with approximate p ≈ 0.08; the 3-seed mean with approximate p ≈ 0.03, optimistic because the splits reshuffle the same clips)
 
 ## PASS — static (frame 0) R² < 0.05 for all reps (log m, μ)
 
@@ -64,9 +64,9 @@
 - vjepa2_l_random/static log_m: null p95 = -0.0244 (bound 0.125), null mean = -0.0244; real ridge R² = -0.0244, p ≤ 1.000 (max over seeds)
 - vjepa2_l_random/static mu: null p95 = -0.0012 (bound 0.125), null mean = -0.0012; real ridge R² = -0.0012, p ≤ 1.000 (max over seeds)
 - vjepa2_l_random/clip_mean log_m: null p95 = -0.0220 (bound 0.125), null mean = -0.0246; real ridge R² = -0.0256, p ≤ 0.990 (max over seeds)
-- vjepa2_l_random/clip_mean mu: null p95 = -0.6845 (bound 0.125), null mean = -1.1023; real ridge R² = 0.9995, p ≤ 0.010 (max over seeds)
+- vjepa2_l_random/clip_mean mu: null p95 = -0.6828 (bound 0.125), null mean = -1.1024; real ridge R² = 0.9996, p ≤ 0.010 (max over seeds)
 - vjepa2_l_random/clip_seq log_m: null p95 = -0.0135 (bound 0.125), null mean = -0.0297; real ridge R² = -0.0310, p ≤ 0.960 (max over seeds)
-- vjepa2_l_random/clip_seq mu: null p95 = -0.0920 (bound 0.125), null mean = -0.2799; real ridge R² = 0.9999, p ≤ 0.010 (max over seeds)
+- vjepa2_l_random/clip_seq mu: null p95 = -0.1065 (bound 0.125), null mean = -0.2898; real ridge R² = 0.9999, p ≤ 0.010 (max over seeds)
 - vjepa2_l/static log_m: null p95 = -0.0244 (bound 0.125), null mean = -0.0244; real ridge R² = -0.0244, p ≤ 1.000 (max over seeds)
 - vjepa2_l/static mu: null p95 = -0.0012 (bound 0.125), null mean = -0.0012; real ridge R² = -0.0012, p ≤ 1.000 (max over seeds)
 - vjepa2_l/clip_mean_L08 log_m: null p95 = -0.0218 (bound 0.125), null mean = -0.0245; real ridge R² = -0.0252, p ≤ 0.802 (max over seeds)
