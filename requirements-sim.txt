@@ -2,4 +2,4 @@
 # grid.mp4 also needs the ffmpeg binary on PATH (without it grid.mp4 is skipped, sheet.png is still written).
 mujoco==3.16.0
 numpy==2.4.6
-pillow>=10  # compute SIM_PY has 13.0.0, the Mac has 10.2.0; only Image/ImageDraw are used
+pillow>=10  # tested with 10.2.0 and 13.0.0; only Image/ImageDraw are used

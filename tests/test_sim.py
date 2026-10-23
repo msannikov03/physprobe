@@ -1,4 +1,4 @@
-"""Simulation tests (compute, $SIM_PY): stopping distance, tilt, frame-0 identity, normal force, generate+validate,
+"""Simulation tests ($SIM_PY, MuJoCo): stopping distance, tilt, frame-0 identity, normal force, generate+validate,
 resume / refusal / provenance. Run: $SIM_PY tests/test_sim.py   (or pytest tests/test_sim.py; skipped without mujoco)"""
 import json
 import os

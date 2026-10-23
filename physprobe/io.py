@@ -28,8 +28,10 @@ dataset_dir = paths.dataset_dir
 
 
 def git_commit():
-    """Short HEAD of the code clone, with '-dirty' appended when tracked files differ from HEAD
-    (same rule as `git describe --dirty`; untracked files are ignored). 'unknown' outside git."""
+    """Short HEAD of the code clone, with '-dirty' appended when tracked files outside results/ differ
+    from HEAD (as `git describe --dirty`, untracked files ignored). results/ is excluded because the
+    canonical outputs are tracked: otherwise every canonical run after the first would stamp itself
+    '-dirty'. 'unknown' outside git."""
     def _git(*args):
         return subprocess.check_output(["git", *args], cwd=paths.code_root(), stderr=subprocess.DEVNULL,
                                        text=True).strip()
@@ -38,7 +40,7 @@ def git_commit():
     except Exception:
         return "unknown"
     try:
-        dirty = bool(_git("status", "--porcelain", "--untracked-files=no"))
+        dirty = bool(_git("status", "--porcelain", "--untracked-files=no", "--", ".", ":!results"))
     except Exception:
         dirty = True
     return head + ("-dirty" if dirty else "")

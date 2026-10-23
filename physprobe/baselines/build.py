@@ -1,4 +1,4 @@
-"""Reference baseline feature blocks (PLAN §4.3 B2, CONTRACT v1 §4.1).
+"""Reference baseline feature blocks (CONTRACT.md: v1 §4.1, amended in v1.2 and v1.3).
 
     python -m physprobe.baselines.build --dataset D [--workers N]
         [--only pixels,state,contact,track] [--noise-seed 0] [--noise-curve]
@@ -29,12 +29,20 @@ into a 1/mu code that train z-scoring blows up to unit variance (R^2 0.95 / 0.86
 push from a solver residual). So every |fn|, |ft| below CONTACT_FLOOR_REL * max is
 set to 0 BEFORE the per-clip normalisation, and the noise is ADDITIVE (a
 multiplicative N(1, s) keeps tiny values tiny). What survives is the stop time
-(ft step, slip flag): t_stop = J/(m mu g), worth about R^2 0.55 (log m) / 0.48 (mu).
+(ft step, slip flag): t_stop = J/(m mu g). Measured on push: noise_000 0.527 (log m) / 0.457 (mu),
+realistic 0.521 / 0.452; any function of t_stop alone reaches at most 0.535 / 0.471 under the priors.
+
+Known issue (kept so the released blocks stay reproducible): fn is m*g up to MuJoCo's float32
+rounding, so in contact/noise_000 the 64 fn/max columns hold 2-3 distinct values near 1 (std
+down to ~4e-9). Train z-scoring inflates them, but they were measured harmless (OLS on those
+columns alone: holdout R^2 -0.10 for log m, 0.007 for mu). tests/test_pipeline.py's
+near-constant-column check cannot see this, because the dummy fn is exactly constant.
 
 Noise curve. The noise is relative to the normalised [0, 1] scale, so it cannot
 leak m (no absolute force scale is left); raw slip speed |v_xy| = v0 - mu g t is an
 exact kinematic oracle and is never included. The same rng seed is used for every
-level (same draw, scaled), so the curve is monotone in p by construction.
+level (same draw, scaled), so the curve is monotone in expectation; CV-tuned ridge R^2 is
+not monotone by construction, but the released curve is (observed).
 
 Only numpy/stdlib here (plus multiprocessing); no torch, no mujoco.
 """
@@ -43,7 +51,6 @@ import json
 from pathlib import Path
 import multiprocessing as mp
 import os
-import subprocess
 import sys
 import time
 
@@ -64,15 +71,6 @@ THREAD_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
 # ----------------------------------------------------------------------------- helpers
-
-def git_commit():
-    try:
-        out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(io.root()),
-                             capture_output=True, text=True, timeout=10)
-        return out.stdout.strip() if out.returncode == 0 and out.stdout.strip() else "nogit"
-    except Exception:
-        return "nogit"
-
 
 def load_dataset_json(name):
     with open(Path(io.dataset_dir(name)) / "dataset.json") as f:
@@ -172,7 +170,7 @@ def _grid(fps):
 
 
 def fit_v0_a(x_m, fps=64.0, quantum_m=None):
-    """Fit v0 and deceleration a from (quantised) x(t) in metres.
+    """Fit v0 and deceleration a from x(t) in metres (unquantised in build; quantum_m sets the fallbacks).
 
     Model (constant deceleration until stop, then rest):
         x(t) = x0 + v0 tau - a tau^2 / 2,   tau = min(t, v0/a).
@@ -219,11 +217,14 @@ def fit_v0_a(x_m, fps=64.0, quantum_m=None):
     return fd()
 
 
-def floor_norm(col, floor_rel=CONTACT_FLOOR_REL):
+def floor_norm(col, floor_rel=None):
     """|x| < floor_rel * max|col| -> 0, then divide by max|col| (all-zero column -> zeros).
 
     The floor comes first: dividing a ~1e-8 N solver residual by the clip max keeps it
-    as a tiny but perfectly informative (1/mu) number."""
+    as a tiny but perfectly informative (1/mu) number. floor_rel=None reads the module's
+    CONTACT_FLOOR_REL at call time (the negative control in tests/test_pipeline.py sets it to 0)."""
+    if floor_rel is None:
+        floor_rel = CONTACT_FLOOR_REL
     col = np.asarray(col, np.float64)
     mx = float(np.max(np.abs(col))) if col.size else 0.0
     if not mx > 1e-12:
@@ -389,7 +390,7 @@ def main(argv=None):
     dsj = load_dataset_json(name)
     ids = [str(r["id"]) for r in meta]
     n = len(ids)
-    commit = git_commit()
+    commit = io.git_commit()
     cfg = dict(dataset=name, groups=groups, noise_seed=args.noise_seed,
                noise_curve=args.noise_curve, camera=dsj.get("camera", {}),
                fps=float(dsj.get("fps", 64)))

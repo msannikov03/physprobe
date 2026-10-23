@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # Reproduce every number and figure in docs/RESULTS_2026-10-22.md, end to end.
 #   scripts/reproduce.sh                   # all steps
-#   scripts/reproduce.sh --from probes     # resume at a step
+#   scripts/reproduce.sh --from probes     # resume at a step; also the CPU-only path on the Hugging Face
+#                                          # download (features/ + data/ without clips), about 15 min
 # Steps, in order:
 #   tests      $SIM_PY tests/test_sim.py (scene physics, frame-0 identity, generator refusals)
 #   data       scripts/gen_all.sh: push 2000, slide 1000, poscheck 300 clips + validate   (~2 min, CPU)
 #   features   scripts/extract_all.sh push slide poscheck: DINOv2, V-JEPA 2, both random-init
-#              controls, Cosmos CV8                         (~25 min + Cosmos ~3 min, one RTX 4090)
+#              controls, Cosmos CV8                         (~40 min, one RTX 4090)
 #   validate   python -m physprobe.io validate for push, slide, poscheck
 #   probes     scripts/probe_all.sh slide, poscheck, push: baselines (+ noise curve), --fresh ridge
 #              probes with the three video + contact/realistic inputs, tables, gates, figures  (~10 min, CPU)
+#              Without clips, only the state/contact blocks are rebuilt; pixels/track come from features/.
 #   quicklook  scripts/quicklook_probes.py: the independent cross-check implementation  (~3 min, CPU)
+#              Without clips, its pixel/track rows also come from features/.
+# Check a rerun against the committed numbers: python scripts/compare_results.py <ref>/probes.csv results/push/probes.csv
 # Interpreters (README, "Environment"): SIM_PY = requirements-sim.txt (mujoco), FEAT_PY =
 # requirements-feats.txt (torch + CUDA). The probes run in FEAT_PY unless PROBE_PY is set.
 # env.sh defaults SIM_PY and FEAT_PY to python3: export them before running when your venvs differ.
@@ -30,7 +34,7 @@ FROM=${STEPS[0]}
 case "${1:-}" in
   "") ;;
   --from) FROM=${2:-}; [ -n "$FROM" ] || usage ;;
-  -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
+  -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
   *) usage ;;
 esac
 case " ${STEPS[*]} " in *" $FROM "*) ;; *) usage ;; esac

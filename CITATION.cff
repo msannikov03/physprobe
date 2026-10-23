@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this code or the published features, please cite it as below."
+type: software
+title: "physprobe: Do frozen video encoders and a generative video tokenizer see hidden object physics?"
+abstract: >-
+  Linear probes of frozen video representations (V-JEPA 2, DINOv2, random-weight controls and the
+  NVIDIA Cosmos-Tokenize1 latent) for the hidden mass and friction of a pushed cube in MuJoCo,
+  compared against pixel, tracker, state and contact baselines with identifiability controls.
+authors:
+  - family-names: Sannikov
+    given-names: Mikhail
+  - family-names: Mikhalchuk
+    given-names: Ilya
+version: "1.1"
+date-released: "2026-10-23"
+repository-code: "https://github.com/msannikov03/physprobe"
+url: "https://huggingface.co/datasets/businesslion/physprobe-features"
+license: MIT
+keywords:
+  - representation probing
+  - intuitive physics
+  - video encoders
+  - V-JEPA 2
+  - DINOv2
+  - Cosmos tokenizer
+  - MuJoCo

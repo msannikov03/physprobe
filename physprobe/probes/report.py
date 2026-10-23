@@ -1,4 +1,4 @@
-"""B4: report over results/<D>/probes.csv -> table.md, gates.md, figs/*.png.
+"""Report over results/<D>/probes.csv -> table.md, gates.md, figs/*.png.
 
     python -m physprobe.probes.report --dataset push [--slide-dataset slide] [--poscheck-dataset poscheck]
     python -m physprobe.probes.report --all     # slide, poscheck, then push (each with a probes.csv)
@@ -16,7 +16,7 @@ Conventions:
   * Gates use the seed-mean test R^2.
   * State oracle: `state/oracle_xc` (unquantised x(t)) is the linear x(t) read-out
     reference: a ceiling for μ, not for log m (video inputs beat it on log m). It is used
-    for the "frac" column (frac > 1 printed as "n/a (>1)"), the oracle gate and the
+    for the "frac" column (frac > 1 + 1e-3 printed as "n/a (>1)"; ties print 1.00), the oracle gate and the
     headline bar when present; `state/oracle_x` (1-px quantised) is informational only.
     Falls back to `oracle_x` for older feature sets.
   * probes.csv rows from more than one git commit trigger a loud warning at the top of
@@ -25,7 +25,8 @@ Conventions:
     p_value) when present, else the single shuffled-label fit (`shuffle` rows).
   * Gate scope: the static gate needs log_m/mu targets; the state-oracle gate runs on
     push-type datasets only (dataset.json scenario / dummy_kind, else the name). The plan v1
-    rules (state/oracle_x R²(log m) > 0.95 and R²(μ) > 0.9; shuffle R² ≤ 0.05) are printed
+    rules (the original gate rules, recorded in CONTRACT.md v1.2: state/oracle_x R²(log m) > 0.95
+    and R²(μ) > 0.9; shuffle R² ≤ 0.05) are printed
     next to the new ones as "plan v1 rule, informational" and never change the summary.
   * Cross-dataset gates read results/slide and results/poscheck by default (dummy:
     results/dummy_slide); missing -> N/A. `--all` re-renders push after slide/poscheck.
@@ -126,21 +127,24 @@ def load_probes(ds):
 
 
 def mean_r2_expected(n_test, n_train=None):
-    """E[test R²] of the train-mean predictor ≈ −(1 + n_test/n_train)/(n_test − 1).
+    """E[test R²] of the train-mean predictor = −(1 + n_test/n_train)/(n_test − 3) for Gaussian y.
 
-    R² = −n_te·(ȳ_te − ȳ_tr)²/SS_te with Var(ȳ_te − ȳ_tr) = σ²(1/n_te + 1/n_tr) and
-    E[SS_te] = σ²(n_te − 1); R²/E is then ≈ χ²₁. Without n_train: −1/(n_test − 1)."""
+    R² = −n_te·(ȳ_te − ȳ_tr)²/SS_te. For Gaussian y, ȳ_te is independent of SS_te ~ σ²χ²(n_te − 1),
+    Var(ȳ_te − ȳ_tr) = σ²(1/n_te + 1/n_tr) and E[1/χ²_k] = 1/(k − 2), hence the n_te − 3.
+    Without n_train: −1/(n_test − 3)."""
     def ok(v):
         return v is not None and not (isinstance(v, float) and math.isnan(v)) and v > 0
-    if not ok(n_test) or n_test <= 1:
+    if not ok(n_test) or n_test <= 3:
         return float("nan")
     ratio = n_test / n_train if ok(n_train) else 0.0
-    return -(1.0 + ratio) / (n_test - 1.0)
+    return -(1.0 + ratio) / (n_test - 3.0)
 
 
 def mean_r2_bounds(n_test, n_train=None):
     """Mean-gate interval [3·E − 0.01, 0.01], E = mean_r2_expected (−0.03 if E is unknown).
-    A single seed leaves it with p ≈ P(χ²₁ > 3) ≈ 0.08, the 3-seed mean with p ≈ 0.03."""
+    R²/E is approximately χ²₁, so a single seed leaves it with p ≈ P(χ²₁ > 3) ≈ 0.08. For the 3-seed
+    mean, p ≈ 0.03 is approximate and optimistic: seeds 1 and 2 reshuffle the same clips as seed 0,
+    so the three splits are correlated, not independent."""
     e = mean_r2_expected(n_test, n_train)
     return (3.0 * e - 0.01 if not math.isnan(e) else -0.03), 0.01
 
@@ -289,7 +293,7 @@ def build_table(ds, df, agg, slide, gate_summary):
     out += ["- R² = test R², mean ± std over seeds (ridge probe unless stated). "
             "RMSE for log m is log-RMSE.",
             f"- Δ = R² − R²(pixels/clip_seq); frac = R² / R²(state/{omode}) (per target); "
-            "a reference that is beaten (frac > 1) is printed as `n/a (>1)`"
+            "a reference that is beaten (frac > 1.001) is printed as `n/a (>1)`, a tie as 1.00"
             + ("; `state/oracle_xc` = unquantised x(t), the linear x(t) read-out reference: a "
                "ceiling for μ, not for log m (a linear probe on x(t) does not invert "
                "d = J²/(2m²μg), so frac for log m is not a fraction of a ceiling); "
@@ -345,7 +349,7 @@ def build_table(ds, df, agg, slide, gate_summary):
         for t in targets:
             r = get(agg, probe, rep, mode, t)
             f = r / orc[t] if (not math.isnan(orc[t]) and orc[t] > 0) else float("nan")
-            cells.append("n/a (>1)" if f > 1.0 else fmt(f, 2))
+            cells.append("n/a (>1)" if f > 1.0 + 1e-3 else fmt(min(f, 1.0), 2))
         ns = [get(agg, probe, rep, mode, t, "n_seeds") for t in targets]
         ns = [int(n) for n in ns if not math.isnan(n)]
         cells.append(str(max(ns)) if ns else "0")
@@ -458,7 +462,7 @@ def run_gates(ds, df, agg, slide, poscheck, kind="push"):
     targets = [t for t in ("log_m", "mu") if t in set(df["target"])] or present_targets(df)
     lm_mu = [t for t in ("log_m", "mu") if t in set(df["target"])]
 
-    # mean: E[test R² of the train-mean predictor] ≈ −(1 + n_test/n_train)/(n_test − 1)
+    # mean: E[test R² of the train-mean predictor] = −(1 + n_test/n_train)/(n_test − 3) (Gaussian y)
     lines, st = [], []
     mean_keys = sorted({(r, m) for p, r, m, _ in agg.index if p == "mean"})
     for r, m in mean_keys:
@@ -475,10 +479,12 @@ def run_gates(ds, df, agg, slide, poscheck, kind="push"):
             lines.append(f"- {t}: R² = {v:.4f}, n_test = {fmt(nt, 0)}, n_train = {fmt(ntr, 0)}, "
                          f"bound [{lo:.4f}, {hi}] (E ≈ {fmt(e, 4)}) → {'ok' if ok else 'out of bound'}")
     if lines:
-        lines.append("- bound: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 1), the "
-                     "expected test R² of the train-mean predictor (R² = −n_test·(ȳ_test − ȳ_train)²/SS_test, "
-                     "so R²/E ≈ χ²₁: one seed leaves the bound with p ≈ 0.08, the 3-seed mean with p ≈ 0.03)")
-    gates.append(("mean", "mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 1)",
+        lines.append("- bound: R² ∈ [3·E − 0.01, 0.01] with E = −(1 + n_test/n_train)/(n_test − 3), the "
+                     "expected test R² of the train-mean predictor for Gaussian y (R² = −n_test·(ȳ_test − "
+                     "ȳ_train)²/SS_test, so R²/E ≈ χ²₁: one seed leaves the bound with approximate p ≈ 0.08; "
+                     "the 3-seed mean with approximate p ≈ 0.03, optimistic because the splits reshuffle "
+                     "the same clips)")
+    gates.append(("mean", "mean R² ∈ [3·E − 0.01, 0.01], E = −(1 + n_test/n_train)/(n_test − 3)",
                   _status(st), lines, False))
 
     # static (frame 0): log_m / mu only; on poscheck frame 0 shows x0 by design
@@ -853,6 +859,7 @@ def fig_headline(ds, df, agg, slide, path):
 
     if axs is not None:
         sname, sdf, sagg = slide
+        drawn = []
         for i, (r, p, m, lab, orc) in enumerate(ent):
             v = get(sagg, p, r, m, "log_m")
             e = get(sagg, p, r, m, "log_m", "r2_std")
@@ -864,6 +871,7 @@ def fig_headline(ds, df, agg, slide, path):
             if math.isnan(v):
                 axs.text(0.0, i, " n/a", va="center", fontsize=7, color=MUTED)
                 continue
+            drawn.append((v, e))
             hatch = (r, m) in ORACLE_MODES
             axs.barh(i, v, height=0.6, color=C_SLIDE if not hatch else MUTED,
                      hatch="///" if hatch else None, edgecolor="white", xerr=e, zorder=2,
@@ -875,9 +883,9 @@ def fig_headline(ds, df, agg, slide, path):
         axs.tick_params(axis="y", left=False, labelleft=False)
         axs.grid(axis="x", color=GRID)
         axs.grid(axis="y", visible=False)
-        sv = [get(sagg, "ridge", r, m, "log_m") for r, p, m, _, _ in ent]
-        finite = [v for v in sv if not math.isnan(v)]
-        axs.set_xlim(min(-0.2, min(finite + [0]) - 0.05), max(0.3, max(finite + [0]) + 0.2))
+        # limits from what was drawn (fallback modes, the mean row and the error bars included)
+        axs.set_xlim(min([-0.2] + [v - e - 0.05 for v, e in drawn]),
+                     max([0.3] + [v + e + 0.2 for v, e in drawn]))
         axs.set_xlabel("test R²(log m)")
         axs.set_title(f"{sname}: mass not identifiable\n(video reps should be ≈ 0)", loc="left",
                       fontsize=9.5)

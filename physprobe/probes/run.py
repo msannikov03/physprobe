@@ -1,4 +1,4 @@
-"""B3: linear (and optional MLP) probes on cached features -> results/<D>/probes.csv.
+"""Linear (and optional MLP) probes on cached features -> results/<D>/probes.csv.
 
 Usage:
   python -m physprobe.probes.run --dataset push [--targets log_m mu] [--reps r1 r2]
@@ -11,7 +11,7 @@ probe, seed): new rows replace old ones, rows of inputs not rerun are KEPT. --fr
 results/<D>/probes.csv and results/<D>/preds/*.npz first, so every row comes from this run
 (use it for canonical reruns; report.py warns when probes.csv mixes git commits).
 
-Protocol (PLAN.md §2 Р2, §4.3 B3):
+Protocol (CONTRACT.md, v1.2 "Probe protocol" with the v1.3 amendments):
   * rows filtered by meta `ok`; splits via io.split_ids(meta, seed), seeds {0,1,2};
   * StandardScaler fit on train -> PCA(256) on train if D > 2048 -> RidgeCV(logspace(-3,6,28), cv=5)
     on train only. Val is never used for fitting/selection here, only reported (r2_val) so that
@@ -30,7 +30,6 @@ import argparse
 import datetime as _dt
 import json
 import os
-import subprocess
 import sys
 import warnings
 from pathlib import Path
@@ -63,18 +62,6 @@ def warn(msg):
 
 def log(msg):
     print(msg, flush=True)
-
-
-def git_commit():
-    for d in (paths.root(), Path(__file__).resolve().parent):
-        try:
-            out = subprocess.run(["git", "-C", str(d), "rev-parse", "--short", "HEAD"],
-                                 capture_output=True, text=True, timeout=5)
-            if out.returncode == 0 and out.stdout.strip():
-                return out.stdout.strip()
-        except Exception:
-            pass
-    return os.environ.get("PHYSPROBE_GIT_COMMIT", "unknown")
 
 
 # ----------------------------------------------------------------------------- targets / splits
@@ -286,7 +273,7 @@ def run(args):
     name = args.dataset
     meta = io.load_meta(name)
     log(f"dataset {name}: {len(meta)} meta rows, ok={sum(bool(r.get('ok', True)) for r in meta)}")
-    commit, now = git_commit(), _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
+    commit, now = io.git_commit(), _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
 
     targets = args.targets
     if targets is None:
